@@ -18,6 +18,18 @@ let rec isval t = match t with
   | t when isnumericval t  -> true
   | _ -> false
 
+(*
+ * TmZero
+ * TmSucc(_, TmZero),
+ * TmSucc(TmSucc(_, TmZero)),
+ * TmSucc(TmSucc(TmSucc(_, TmZero)))
+ * are values,
+ * when 'eval1' apply to them, will get NoRuleApplies finally
+ * so 'eval' will return the value itself
+ * represente 0, 1 2 3 4 5.... respectively
+ * *)
+
+
 let rec eval1 t = match t with
     TmIf(_,TmTrue(_),t2,t3) ->
       t2
