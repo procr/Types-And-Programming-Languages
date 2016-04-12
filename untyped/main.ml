@@ -57,7 +57,10 @@ let rec process_command ctx cmd = match cmd with
       force_newline();
       ctx
   | Bind(fi,x,bind) -> 
-      pr x; pr " "; prbinding ctx bind; force_newline();
+      pr "Current context Γ = ";
+      prbinding ctx bind; 
+      pr x;
+      force_newline();
       addbinding ctx x bind
   
 let process_file f ctx =

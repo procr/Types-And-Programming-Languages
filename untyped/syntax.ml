@@ -163,7 +163,19 @@ and printtm_ATerm outer ctx t = match t with
 
 let printtm ctx t = printtm_Term true ctx t 
 
+
+let rec prctx ctx = match ctx with
+    [] -> ()
+  | (y,_)::rest ->
+          prctx rest;
+          pr y;
+          pr ", "
+
+
+
 let prbinding ctx b = match b with
-    NameBind -> () 
+    NameBind -> 
+        prctx ctx
+  | b -> () 
 
 

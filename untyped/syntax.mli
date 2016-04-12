@@ -36,6 +36,7 @@ val termSubstTop: term -> term -> term
 val printtm: context -> term -> unit
 val printtm_ATerm: bool -> context -> term -> unit
 val prbinding : context -> binding -> unit
+val prctx : context -> unit 
 
 (* Misc *)
 val tmInfo: term -> info
