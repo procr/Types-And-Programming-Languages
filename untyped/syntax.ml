@@ -171,11 +171,7 @@ let rec prctx ctx = match ctx with
           pr y;
           pr ", "
 
-
-
 let prbinding ctx b = match b with
     NameBind -> 
         prctx ctx
   | b -> () 
-
-

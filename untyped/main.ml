@@ -57,7 +57,7 @@ let rec process_command ctx cmd = match cmd with
       force_newline();
       ctx
   | Bind(fi,x,bind) -> 
-      pr "Current context Γ = ";
+      pr "Γ = ";
       prbinding ctx bind; 
       pr x;
       force_newline();
