@@ -60,29 +60,27 @@ let rec name2index fi ctx x =
 (* ---------------------------------------------------------------------- *)
 (* Shifting *)
 
-let tmmap onvar c t = 
-  let rec walk c t = match t with
-    TmVar(fi,x,n) -> onvar fi c x n
-  | TmAbs(fi,x,t2) -> TmAbs(fi,x,walk (c+1) t2)
-  | TmApp(fi,t1,t2) -> TmApp(fi,walk c t1,walk c t2)
-  in walk c t
+(* ↑dc (t) *)
+ let termShift d t =
+    let rec walk c t = match t with
+        TmVar(fi,x,n) -> if x>=c then TmVar(fi,x+d,n+d) else TmVar(fi,x,n+d)
+      | TmAbs(fi,x,t1) -> TmAbs(fi, x, walk (c+1) t1)
+      | TmApp(fi,t1,t2) -> TmApp(fi, walk c t1, walk c t2) 
+    in walk 0 t
 
-let termShiftAbove d c t =
-  tmmap
-    (fun fi c x n -> if x>=c then TmVar(fi,x+d,n+d) else TmVar(fi,x,n+d))
-    c t
-
-let termShift d t = termShiftAbove d 0 t
 
 (* ---------------------------------------------------------------------- *)
 (* Substitution *)
 
+(* [j -> s] t, replace j with s (value) in t (abstract) *)
 let termSubst j s t =
-  tmmap
-    (fun fi c x n -> if x=j+c then termShift c s else TmVar(fi,x,n))
-    0
-    t
+    let rec walk c t = match t with
+        TmVar(fi,x,n) -> if x=j+c then termShift c s else TmVar(fi,x,n)
+      | TmAbs(fi,x,t1) -> TmAbs(fi, x, walk (c+1) t1)
+      | TmApp(fi,t1,t2) -> TmApp(fi, walk c t1, walk c t2) 
+    in walk 0 t
 
+(*bring s (value) into t (abstract) *)
 let termSubstTop s t = 
   termShift (-1) (termSubst 0 (termShift 1 s) t)
 
@@ -96,7 +94,6 @@ let tmInfo t = match t with
 
 (* ---------------------------------------------------------------------- *)
 (* Printing *)
-
 
 let rec printtm ctx t = match t with
     TmAbs(fi,x,t1) ->
