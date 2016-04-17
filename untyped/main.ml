@@ -53,7 +53,7 @@ let alreadyImported = ref ([] : string list)
 let rec process_command ctx cmd = match cmd with
   | Eval(fi,t) -> 
       let t' = eval ctx t in
-      printtm_ATerm true ctx t'; 
+      printtm ctx t'; 
       force_newline();
       ctx
   | Bind(fi,x,bind) -> 

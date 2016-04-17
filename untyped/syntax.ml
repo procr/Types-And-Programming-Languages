@@ -87,18 +87,6 @@ let termSubstTop s t =
   termShift (-1) (termSubst 0 (termShift 1 s) t)
 
 (* ---------------------------------------------------------------------- *)
-(* Context management (continued) *)
-
-let rec getbinding fi ctx i =
-  try
-    let (_,bind) = List.nth ctx i in
-    bind 
-  with Failure _ ->
-    let msg =
-      Printf.sprintf "Variable lookup failure: offset: %d, ctx size: %d" in
-    error fi (msg i (List.length ctx))
- 
-(* ---------------------------------------------------------------------- *)
 (* Extracting file info *)
 
 let tmInfo t = match t with
@@ -109,69 +97,32 @@ let tmInfo t = match t with
 (* ---------------------------------------------------------------------- *)
 (* Printing *)
 
-(* The printing functions call these utility functions to insert grouping
-  information and line-breaking hints for the pretty-printing library:
-     obox   Open a "box" whose contents will be indented by two spaces if
-            the whole box cannot fit on the current line
-     obox0  Same but indent continuation lines to the same column as the
-            beginning of the box rather than 2 more columns to the right
-     cbox   Close the current box
-     break  Insert a breakpoint indicating where the line maybe broken if
-            necessary.
-  See the documentation for the Format module in the OCaml library for
-  more details. 
-*)
 
-let obox0() = open_hvbox 0
-let obox() = open_hvbox 2
-let cbox() = close_box()
-let break() = print_break 0 0
+let rec printtm ctx t = match t with
+    TmAbs(fi,x,t1) ->
+      let (ctx',x') = pickfreshname ctx x in
+          pr "(λ"; pr x'; pr ". "; printtm ctx' t1; pr ")"
 
-let small t = 
-  match t with
-    TmVar(_,_,_) -> true
-  | _ -> false
+  | TmApp(fi, t1, t2) ->
+      pr "("; printtm ctx t1; pr " "; printtm ctx t2; pr ")"
 
-let rec printtm_Term outer ctx t = match t with
-    TmAbs(fi,x,t2) ->
-      (let (ctx',x') = (pickfreshname ctx x) in
-            obox(); pr "lambda "; pr x'; pr ".";
-            if (small t2) && not outer then break() else print_space();
-            printtm_Term outer ctx' t2;
-            cbox())
-  | t -> printtm_AppTerm outer ctx t
-
-and printtm_AppTerm outer ctx t = match t with
-    TmApp(fi, t1, t2) ->
-      obox0();
-      printtm_AppTerm false ctx t1;
-      print_space();
-      printtm_ATerm false ctx t2;
-      cbox()
-  | t -> printtm_ATerm outer ctx t
-
-and printtm_ATerm outer ctx t = match t with
-    TmVar(fi,x,n) ->
+  | TmVar(fi,x,n) ->
       if ctxlength ctx = n then
-        pr (index2name fi ctx x)
+          pr (index2name fi ctx x)
       else
-        pr ("[bad index: " ^ (string_of_int x) ^ "/" ^ (string_of_int n)
-            ^ " in {"
-            ^ (List.fold_left (fun s (x,_) -> s ^ " " ^ x) "" ctx)
-            ^ " }]")
-  | t -> pr "("; printtm_Term outer ctx t; pr ")"
+          pr "[bad index]"
 
-let printtm ctx t = printtm_Term true ctx t 
+  | t -> printtm ctx t
 
 
 let rec prctx ctx = match ctx with
-    [] -> ()
+[] -> ()
   | (y,_)::rest ->
           prctx rest;
           pr y;
           pr ", "
 
 let prbinding ctx b = match b with
-    NameBind -> 
-        prctx ctx
+NameBind -> 
+    prctx ctx
   | b -> () 
