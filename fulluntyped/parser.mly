@@ -27,13 +27,12 @@ open Syntax
 %token <Support.Error.info> ELSE
 %token <Support.Error.info> TRUE
 %token <Support.Error.info> FALSE
-%token <Support.Error.info> LAMBDA
-%token <Support.Error.info> TIMESFLOAT
 %token <Support.Error.info> SUCC
 %token <Support.Error.info> PRED
 %token <Support.Error.info> ISZERO
-%token <Support.Error.info> LET
-%token <Support.Error.info> IN
+
+%token <Support.Error.info> LAMBDA
+
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -142,10 +141,6 @@ Term :
       { fun ctx ->
           let ctx1 = addname ctx "_" in
           TmAbs($1, "_", $4 ctx1) }
-  | LET LCID EQ Term IN Term
-      { fun ctx -> TmLet($1, $2.v, $4 ctx, $6 (addname ctx $2.v)) }
-  | LET USCORE EQ Term IN Term
-      { fun ctx -> TmLet($1, "_", $4 ctx, $6 (addname ctx "_")) }
 
 AppTerm :
     PathTerm
@@ -155,8 +150,6 @@ AppTerm :
           let e1 = $1 ctx in
           let e2 = $2 ctx in
           TmApp(tmInfo e1,e1,e2) }
-  | TIMESFLOAT PathTerm PathTerm
-      { fun ctx -> TmTimesfloat($1, $2 ctx, $3 ctx) }
   | SUCC PathTerm
       { fun ctx -> TmSucc($1, $2 ctx) }
   | PRED PathTerm

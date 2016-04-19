@@ -16,13 +16,11 @@ let reservedWords = [
   ("else", fun i -> Parser.ELSE i);
   ("true", fun i -> Parser.TRUE i);
   ("false", fun i -> Parser.FALSE i);
-  ("lambda", fun i -> Parser.LAMBDA i);
-  ("timesfloat", fun i -> Parser.TIMESFLOAT i);
   ("succ", fun i -> Parser.SUCC i);
   ("pred", fun i -> Parser.PRED i);
   ("iszero", fun i -> Parser.ISZERO i);
-  ("let", fun i -> Parser.LET i);
-  ("in", fun i -> Parser.IN i);
+
+  ("lambda", fun i -> Parser.LAMBDA i);
   
   (* Symbols *)
   ("_", fun i -> Parser.USCORE i);
