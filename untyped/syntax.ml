@@ -6,9 +6,18 @@ open Support.Pervasive
 (* Datatypes *)
 
 type term =
-    TmVar of info * int * int
+  TmTrue of info
+  | TmFalse of info
+  | TmIf of info * term * term * term
+  | TmZero of info
+  | TmSucc of info * term
+  | TmPred of info * term
+  | TmIsZero of info * term
+
+  | TmVar of info * int * int
   | TmAbs of info * string * term
   | TmApp of info * term * term
+  
 
 type binding =
     NameBind 
@@ -66,6 +75,7 @@ let rec name2index fi ctx x =
         TmVar(fi,x,n) -> if x>=c then TmVar(fi,x+d,n+d) else TmVar(fi,x,n+d)
       | TmAbs(fi,x,t1) -> TmAbs(fi, x, walk (c+1) t1)
       | TmApp(fi,t1,t2) -> TmApp(fi, walk c t1, walk c t2) 
+      | t -> t
     in walk 0 t
 
 
@@ -78,6 +88,7 @@ let termSubst j s t =
         TmVar(fi,x,n) -> if x=j+c then termShift c s else TmVar(fi,x,n)
       | TmAbs(fi,x,t1) -> TmAbs(fi, x, walk (c+1) t1)
       | TmApp(fi,t1,t2) -> TmApp(fi, walk c t1, walk c t2) 
+      | t -> t
     in walk 0 t
 
 (*bring s (value) into t (abstract) *)
@@ -88,7 +99,15 @@ let termSubstTop s t =
 (* Extracting file info *)
 
 let tmInfo t = match t with
-    TmVar(fi,_,_) -> fi
+   TmTrue(fi) -> fi
+  | TmFalse(fi) -> fi
+  | TmIf(fi,_,_,_) -> fi
+  | TmZero(fi) -> fi
+  | TmSucc(fi,_) -> fi
+  | TmPred(fi,_) -> fi
+  | TmIsZero(fi,_) -> fi
+
+  | TmVar(fi,_,_) -> fi
   | TmAbs(fi,_,_) -> fi
   | TmApp(fi, _, _) -> fi 
 
@@ -96,7 +115,34 @@ let tmInfo t = match t with
 (* Printing *)
 
 let rec printtm ctx t = match t with
-    TmAbs(fi,x,t1) ->
+
+   TmIf(fi, t1, t2, t3) ->
+       pr "if ";
+       printtm ctx t1;
+       print_space();
+       pr "then ";
+       printtm ctx t2;
+       print_space();
+       pr "else ";
+       printtm ctx t3;
+
+  | TmPred(_,t1) ->
+       pr "pred "; printtm ctx t1
+  | TmIsZero(_,t1) ->
+       pr "iszero "; printtm ctx t1
+ 
+  | TmTrue(_) -> pr "true"
+  | TmFalse(_) -> pr "false"
+  | TmZero(fi) ->
+       pr "0"
+  | TmSucc(_,t1) ->
+     let rec f n t = match t with
+         TmZero(_) -> pr (string_of_int n)
+       | TmSucc(_,s) -> f (n+1) s
+       | _ -> (pr "(succ "; printtm ctx t1; pr ")")
+     in f 1 t1
+
+  | TmAbs(fi,x,t1) ->
       let (ctx',x') = pickfreshname ctx x in
           pr "(λ"; pr x'; pr ". "; printtm ctx' t1; pr ")"
 

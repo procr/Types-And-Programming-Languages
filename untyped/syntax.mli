@@ -5,9 +5,18 @@ open Support.Error
 
 (* Data type definitions *)
 type term =
-    TmVar of info * int * int
+  TmTrue of info
+  | TmFalse of info
+  | TmIf of info * term * term * term
+  | TmZero of info
+  | TmSucc of info * term
+  | TmPred of info * term
+  | TmIsZero of info * term
+
+  | TmVar of info * int * int
   | TmAbs of info * string * term
   | TmApp of info * term * term
+ 
 
 type binding =
     NameBind 
