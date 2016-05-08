@@ -5,6 +5,11 @@ open Support.Pervasive
 (* ---------------------------------------------------------------------- *)
 (* Datatypes *)
 
+type ty =
+    TyArr of ty * ty
+  | TyBool
+  | TyNat
+
 type term =
   TmTrue of info
   | TmFalse of info
@@ -15,12 +20,13 @@ type term =
   | TmIsZero of info * term
 
   | TmVar of info * int * int
-  | TmAbs of info * string * term
+  | TmAbs of info * string * ty * term
   | TmApp of info * term * term
   
 
 type binding =
-    NameBind 
+    NameBind
+  | VarBind of ty
 
 type context = (string * binding) list
 
@@ -73,8 +79,15 @@ let rec name2index fi ctx x =
  let termShift d t =
     let rec walk c t = match t with
         TmVar(fi,x,n) -> if x>=c then TmVar(fi,x+d,n+d) else TmVar(fi,x,n+d)
-      | TmAbs(fi,x,t1) -> TmAbs(fi, x, walk (c+1) t1)
+      | TmAbs(fi,x,tyT1,t1) -> TmAbs(fi, x, tyT1, walk (c+1) t1)
       | TmApp(fi,t1,t2) -> TmApp(fi, walk c t1, walk c t2) 
+      | TmTrue(fi) as t -> t
+      | TmFalse(fi) as t -> t
+      | TmIf(fi,t1,t2,t3) -> TmIf(fi,walk c t1,walk c t2,walk c t3)
+      | TmZero(fi)      -> TmZero(fi)
+      | TmSucc(fi,t1)   -> TmSucc(fi, walk c t1)
+      | TmPred(fi,t1)   -> TmPred(fi, walk c t1)
+      | TmIsZero(fi,t1) -> TmIsZero(fi, walk c t1)
       | t -> t
     in walk 0 t
 
@@ -86,14 +99,40 @@ let rec name2index fi ctx x =
 let termSubst j s t =
     let rec walk c t = match t with
         TmVar(fi,x,n) -> if x=j+c then termShift c s else TmVar(fi,x,n)
-      | TmAbs(fi,x,t1) -> TmAbs(fi, x, walk (c+1) t1)
+      | TmAbs(fi,x,tyT1,t1) -> TmAbs(fi, x, tyT1, walk (c+1) t1)
       | TmApp(fi,t1,t2) -> TmApp(fi, walk c t1, walk c t2) 
+      | TmTrue(fi) as t -> t
+      | TmFalse(fi) as t -> t
+      | TmIf(fi,t1,t2,t3) -> TmIf(fi,walk c t1,walk c t2,walk c t3)
+      | TmZero(fi)      -> TmZero(fi)
+      | TmSucc(fi,t1)   -> TmSucc(fi, walk c t1)
+      | TmPred(fi,t1)   -> TmPred(fi, walk c t1)
+      | TmIsZero(fi,t1) -> TmIsZero(fi, walk c t1)
       | t -> t
     in walk 0 t
 
 (*bring s (value) into t (abstract) *)
 let termSubstTop s t = 
   termShift (-1) (termSubst 0 (termShift 1 s) t)
+
+
+(* ---------------------------------------------------------------------- *)
+(* Context management (continued) *)
+
+let rec getbinding fi ctx i =
+    try
+        let (_,bind) = List.nth ctx i in
+            bind
+    with Failure _ ->
+        let msg = Printf.sprintf "Variable lookup failure: offset: %d, ctx size: %d" in
+            error fi (msg i (List.length ctx))
+
+let getTypeFromContext fi ctx i =
+    match getbinding fi ctx i with
+        VarBind(tyT) -> tyT
+      | _ -> error fi
+        ("getTypeFromContext: Wrong kind of binding for variable " ^ (index2name fi ctx i))
+
 
 (* ---------------------------------------------------------------------- *)
 (* Extracting file info *)
@@ -108,14 +147,26 @@ let tmInfo t = match t with
   | TmIsZero(fi,_) -> fi
 
   | TmVar(fi,_,_) -> fi
-  | TmAbs(fi,_,_) -> fi
+  | TmAbs(fi,_,_,_) -> fi
   | TmApp(fi, _, _) -> fi 
 
 (* ---------------------------------------------------------------------- *)
 (* Printing *)
 
-let rec printtm ctx t = match t with
 
+(* Printing type*)
+let rec printty tyT = match tyT with
+    TyArr(tyT1,tyT2) ->
+        printty tyT1;
+        pr " -> ";
+        printty tyT2;
+  | TyBool -> pr "Bool"
+  | TyNat -> pr "Nat"
+    
+
+
+(* Printing term*)
+let rec printtm ctx t = match t with
    TmIf(fi, t1, t2, t3) ->
        pr "if ";
        printtm ctx t1;
@@ -142,9 +193,13 @@ let rec printtm ctx t = match t with
        | _ -> (pr "(succ "; printtm ctx t1; pr ")")
      in f 1 t1
 
-  | TmAbs(fi,x,t1) ->
+  | TmAbs(fi,x,tyT1,t1) ->
       let (ctx',x') = pickfreshname ctx x in
-          pr "(λ"; pr x'; pr ". "; printtm ctx' t1; pr ")"
+          pr "(λ"; pr x'; pr " : ";
+          printty tyT1;
+          pr ". "; 
+          printtm ctx' t1; 
+          pr ")"
 
   | TmApp(fi, t1, t2) ->
       pr "("; printtm ctx t1; pr " "; printtm ctx t2; pr ")"
@@ -155,17 +210,14 @@ let rec printtm ctx t = match t with
       else
           pr "[bad index]"
 
-  | t -> printtm ctx t
 
 
 let rec prctx ctx = match ctx with
-[] -> ()
+    [] -> ()
   | (y,_)::rest ->
           prctx rest;
           pr y;
           pr ", "
 
 let prbinding ctx b = match b with
-NameBind -> 
-    prctx ctx
-  | b -> () 
+    b -> prctx ctx

@@ -1,28 +1,19 @@
 /* Examples for testing */
 
-/* for arith testing */
-
 true;
-if false then true else false; 
-
-0; 
-succ (pred 0);
-iszero (pred (succ (succ 0))); 
+1;
 
 
-/* for untyped lambda calculus */
+a: Bool;
+b: Nat;
+c: Bool -> Nat;
 
-lambda x. x;
-(lambda x. x) (lambda x. x x);
-(lambda x. x x) (lambda x. x x);
+c a;
 
-x/;
+lambda x:Bool. c a;
 
-x;
-lambda x. x;
-(lambda x. x) (lambda x. x x);
+lambda x:Bool. x;
 
-w/;
-a/;
+(lambda x:Bool->Bool. if x false then true else false) (lambda x:Bool. if x then false else true);
 
-(lambda b.w (lambda a.b a)) (lambda b.b a);
+

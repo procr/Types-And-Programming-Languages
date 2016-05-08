@@ -22,17 +22,14 @@ open Syntax
  */
 
 /* Keyword tokens */
+%token <Support.Error.info> LAMBDA
 %token <Support.Error.info> IF
 %token <Support.Error.info> THEN
 %token <Support.Error.info> ELSE
 %token <Support.Error.info> TRUE
 %token <Support.Error.info> FALSE
-%token <Support.Error.info> SUCC
-%token <Support.Error.info> PRED
-%token <Support.Error.info> ISZERO
-
-%token <Support.Error.info> LAMBDA
-
+%token <Support.Error.info> BOOL
+%token <Support.Error.info> NAT
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -123,53 +120,66 @@ Command :
 
 /* Right-hand sides of top-level bindings */
 Binder :
-    SLASH
-      { fun ctx -> NameBind }
+    COLON Type
+      { fun ctx -> VarBind ($2 ctx)}
+
+/* All type expressions */
+Type :
+    ArrowType
+                { $1 }
+
+/* Atomic types are those that never need extra parentheses */
+AType :
+    LPAREN Type RPAREN  
+           { $2 } 
+  | BOOL
+      { fun ctx -> TyBool }
+  | NAT 
+      { fun ctx -> TyNat }
+
+
+/* An "arrow type" is a sequence of atomic types separated by
+   arrows. */
+ArrowType :
+    AType ARROW ArrowType
+     { fun ctx -> TyArr($1 ctx, $3 ctx) }
+  | AType
+            { $1 }
 
 Term :
     AppTerm
       { $1 }
-  | IF Term THEN Term ELSE Term
-      { fun ctx -> TmIf($1, $2 ctx, $4 ctx, $6 ctx) }
-  | LAMBDA LCID DOT Term 
+  | LAMBDA LCID COLON Type DOT Term 
       { fun ctx ->
           let ctx1 = addname ctx $2.v in
-          TmAbs($1, $2.v, $4 ctx1) }
-  | LAMBDA USCORE DOT Term 
+          TmAbs($1, $2.v, $4 ctx, $6 ctx1) }
+  | LAMBDA USCORE COLON Type DOT Term 
       { fun ctx ->
           let ctx1 = addname ctx "_" in
-          TmAbs($1, "_", $4 ctx1) }
+          TmAbs($1, "_", $4 ctx, $6 ctx1) }
+  | IF Term THEN Term ELSE Term
+      { fun ctx -> TmIf($1, $2 ctx, $4 ctx, $6 ctx) }
 
 AppTerm :
-    PathTerm
+    ATerm
       { $1 }
-  | AppTerm PathTerm
+  | AppTerm ATerm
       { fun ctx ->
           let e1 = $1 ctx in
           let e2 = $2 ctx in
           TmApp(tmInfo e1,e1,e2) }
-  | SUCC PathTerm
-      { fun ctx -> TmSucc($1, $2 ctx) }
-  | PRED PathTerm
-      { fun ctx -> TmPred($1, $2 ctx) }
-  | ISZERO PathTerm
-      { fun ctx -> TmIsZero($1, $2 ctx) }
-
-PathTerm :
-  | ATerm
-      { $1 }
 
 /* Atomic terms are ones that never require extra parentheses */
 ATerm :
     LPAREN Term RPAREN  
       { $2 } 
+  | LCID 
+      { fun ctx ->
+          TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
   | TRUE
       { fun ctx -> TmTrue($1) }
   | FALSE
       { fun ctx -> TmFalse($1) }
-  | LCID 
-      { fun ctx ->
-          TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
   | INTV
       { fun ctx ->
           let rec f n = match n with
@@ -177,23 +187,6 @@ ATerm :
             | n -> TmSucc($1.i, f (n-1))
           in f $1.v }
 
-Fields :
-    /* empty */
-      { fun ctx i -> [] }
-  | NEFields
-      { $1 }
-
-NEFields :
-    Field
-      { fun ctx i -> [$1 ctx i] }
-  | Field COMMA NEFields
-      { fun ctx i -> ($1 ctx i) :: ($3 ctx (i+1)) }
-
-Field :
-    LCID EQ Term
-      { fun ctx i -> ($1.v, $3 ctx) }
-  | Term
-      { fun ctx i -> (string_of_int i, $1 ctx) }
 
 
 /*   */
