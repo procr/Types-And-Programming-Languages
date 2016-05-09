@@ -101,7 +101,7 @@ let rec typeof ctx t =
             else error fi "guard of conditional not a boolean"
   | TmSucc(fi,t1) -> TyNat
   | TmPred(_,_) -> TyNat
-  | TmIsZero(_,_) -> TyNat
+  | TmIsZero(_,_) -> TyBool
   | TmZero(_) -> TyNat
 
 
