@@ -99,9 +99,15 @@ let rec typeof ctx t =
                if (=) tyT2 (typeof ctx t3) then tyT2 
                else error fi "arms of conditional have different types"
             else error fi "guard of conditional not a boolean"
-  | TmSucc(fi,t1) -> TyNat
-  | TmPred(_,_) -> TyNat
-  | TmIsZero(_,_) -> TyBool
+  | TmSucc(fi,t1) ->
+          if (=) (typeof ctx t1) TyNat then TyNat
+          else error fi "TmSucc should accept a TyNat"
+  | TmPred(fi,t1) ->
+          if (=) (typeof ctx t1) TyNat then TyNat
+          else error fi "TmPred should accept a TyNat"
+  | TmIsZero(fi,t1) ->
+          if (=) (typeof ctx t1) TyNat then TyBool
+          else error fi "TmIsZero should accept a TyNat"
   | TmZero(_) -> TyNat
 
 

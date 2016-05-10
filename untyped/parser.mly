@@ -30,6 +30,9 @@ open Syntax
 %token <Support.Error.info> FALSE
 %token <Support.Error.info> BOOL
 %token <Support.Error.info> NAT
+%token <Support.Error.info> SUCC
+%token <Support.Error.info> PRED
+%token <Support.Error.info> ISZERO
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -163,6 +166,13 @@ Term :
 AppTerm :
     ATerm
       { $1 }
+  | SUCC ATerm
+    { fun ctx -> TmSucc($1, $2 ctx) }
+  | PRED ATerm
+    { fun ctx -> TmPred($1, $2 ctx) }
+  | ISZERO ATerm
+    { fun ctx -> TmIsZero($1, $2 ctx) }
+
   | AppTerm ATerm
       { fun ctx ->
           let e1 = $1 ctx in
