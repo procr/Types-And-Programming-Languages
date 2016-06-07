@@ -5,45 +5,30 @@ open Support.Error
 
 (* Data type definitions *)
 type ty =
-    TyVar of int * int
-  | TyId of string
-  | TyTop
-  | TyArr of ty * ty
+    TyArr of ty * ty
   | TyBool
-  | TyRecord of (string * ty) list
-  | TyString
-  | TyUnit
-  | TyFloat
   | TyNat
+  | TyTop
+  | TyRecord of (string * ty) list
 
 type term =
-    TmVar of info * int * int
-  | TmAbs of info * string * ty * term
-  | TmApp of info * term * term
-  | TmTrue of info
+    TmTrue of info
   | TmFalse of info
   | TmIf of info * term * term * term
-  | TmRecord of info * (string * term) list
-  | TmProj of info * term * string
-  | TmLet of info * string * term * term
-  | TmFix of info * term
-  | TmString of info * string
-  | TmUnit of info
-  | TmAscribe of info * term * ty
-  | TmFloat of info * float
-  | TmTimesfloat of info * term * term
   | TmZero of info
   | TmSucc of info * term
   | TmPred of info * term
   | TmIsZero of info * term
-  | TmInert of info * ty
+  | TmVar of info * int * int
+  | TmAbs of info * string * ty * term
+  | TmApp of info * term * term
+  | TmRecord of info * (string * term) list
+  | TmProj of info * term * string
 
 type binding =
     NameBind 
-  | TyVarBind
   | VarBind of ty
   | TmAbbBind of term * (ty option)
-  | TyAbbBind of ty
 
 type command =
   | Eval of info * term
@@ -61,18 +46,14 @@ val name2index : info -> context -> string -> int
 val isnamebound : context -> string -> bool
 val getTypeFromContext : info -> context -> int -> ty
 
+
 (* Shifting and substitution *)
 val termShift: int -> term -> term
 val termSubstTop: term -> term -> term
-val typeShift : int -> ty -> ty
-val typeSubstTop: ty -> ty -> ty
-val tytermSubstTop: ty -> term -> term
 
 (* Printing *)
-val printtm: context -> term -> unit
 val printtm_ATerm: bool -> context -> term -> unit
-val printty : context -> ty -> unit
-val prbinding : context -> binding -> unit
+val printty : context-> ty -> unit
 
 (* Misc *)
 val tmInfo: term -> info

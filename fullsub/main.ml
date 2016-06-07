@@ -58,18 +58,20 @@ let checkbinding fi ctx b = match b with
      let tyT' = typeof ctx t in
      if subtype ctx tyT' tyT then TmAbbBind(t,Some(tyT))
      else error fi "Type of binding does not match declared type"
-  | TyVarBind -> TyVarBind
-  | TyAbbBind(tyT) -> TyAbbBind(tyT)
 
 let prbindingty ctx b = match b with
     NameBind -> ()
-  | TyVarBind -> ()
   | VarBind(tyT) -> pr ": "; printty ctx tyT 
   | TmAbbBind(t, tyT_opt) -> pr ": ";
      (match tyT_opt with
          None -> printty ctx (typeof ctx t)
        | Some(tyT) -> printty ctx tyT)
-  | TyAbbBind(tyT) -> pr ":: *"
+
+
+let evalbinding ctx b = match b with
+    TmAbbBind(t,tyT) ->
+        let t' = eval ctx t in TmAbbBind(t',tyT)
+    | bind -> bind
 
 let rec process_command ctx cmd = match cmd with
   | Eval(fi,t) -> 
